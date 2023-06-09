@@ -12,7 +12,6 @@ class DeviceEntity:
         self.name: str = name
         self.address: str = address
         self.type: DeviceType = DeviceType(type)
-        self.status: str = 'disconnected'
 
 
 # Przykładowe użycie
