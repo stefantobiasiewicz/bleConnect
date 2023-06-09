@@ -5,7 +5,7 @@ from threading import Thread
 
 from flask import Flask, request, jsonify, render_template
 
-from ble.manager import DeviceManager
+from ble.manager import DeviceManager, Status
 from ble.scanner import search_and_return_device
 from ble.water_dispenser import WaterDispenser
 from db.entity import DeviceEntity, DeviceType
@@ -21,18 +21,6 @@ device_manager = DeviceManager(DbManager(DB_PATH), ble_loop)
 app = Flask(__name__)
 
 
-def check_if_contain(manager, devices):
-    addresses = []
-    for device in manager.get_devices():
-        addresses.append(device.address)
-
-    for device in devices:
-        if device.address in addresses:
-            devices.remove(device)
-
-    return devices
-
-
 @app.route('/api/ble/search', methods=['POST'])
 def search_device():
     future = asyncio.run_coroutine_threadsafe(search_and_return_device(), ble_loop)
@@ -40,7 +28,7 @@ def search_device():
 
     devices_mapped = []
     for dev in devices:
-        if device_manager.check_if_contain(dev.address):
+        if not device_manager.check_if_contain(dev.address):
             devices_mapped.append({"name": dev.name, "address": dev.address})
 
     # Tworzenie odpowiedzi JSON
@@ -72,7 +60,8 @@ def wd_identify(device_id: int):
     value = int(request.form.get('value'))
 
     # isinstance?
-    water_dispenser: WaterDispenser = device_manager.get_device_by_id(device_id)
+    # connected?
+    water_dispenser: WaterDispenser = device_manager.get_by_id(device_id).ble
 
     if water_dispenser is None:
         return jsonify({'status' : 'no-device'})
@@ -93,7 +82,8 @@ def wd_on_off(device_id: int):
     value = int(request.form.get('value'))
 
     # isinstance?
-    water_dispenser: WaterDispenser = device_manager.get_device_by_id(device_id)
+    # connected?
+    water_dispenser: WaterDispenser = device_manager.get_by_id(device_id).ble
 
     if water_dispenser is None:
         return jsonify({'status' : 'no-device'})
@@ -114,8 +104,8 @@ def wd_impuls(device_id: int):
     value = int(request.form.get('value'))
 
     # isinstance?
-    water_dispenser: WaterDispenser = device_manager.get_device_by_id(device_id)
-
+    # connected?
+    water_dispenser: WaterDispenser = device_manager.get_by_id(device_id).ble
 
     if water_dispenser is None:
         return jsonify({'status' : 'no-device'})
@@ -133,8 +123,8 @@ def wd_run(device_id: int):
     value = int(request.form.get('value'))
 
     # isinstance?
-    water_dispenser: WaterDispenser = device_manager.get_device_by_id(device_id)
-
+    # connected?
+    water_dispenser: WaterDispenser = device_manager.get_by_id(device_id).ble
 
     # some advisor?
     if water_dispenser is None:
@@ -153,20 +143,33 @@ def wd_run(device_id: int):
 
 @app.route('/', methods=['GET'])
 def devices():
-    return render_template('devices.html', devices=device_manager.get_devices())
+    devices = []
+
+    for compose in  device_manager.get_devices():
+        devices.append(
+            {
+                "id": compose.entity.id,
+                "name": compose.entity.name,
+                "address": compose.entity.address,
+                "status": compose.status,
+                "type": compose.entity.type,
+            }
+        )
+
+    return render_template('devices.html', devices=devices)
 
 
 @app.route('/device/<int:device_id>')
 def device_details(device_id):
-    device = device_manager.get_entity_by_id(device_id)
-    try:
-        device_manager.get_connected_device_by_id(device_id)
+    device = device_manager.get_by_id(device_id)
 
-        return render_template('device_details.html', device=device)
-    except Exception as e:
-        print(f'Wystąpił wyjątek: {str(e)}')
-        # client_manager.remove_by_address(device.address)
-        return render_template('device_device_not_available.html')
+    device_manager.connect(device)
+
+    # if device.status is Status.DIS_CONNECTED:
+    #     return render_template('device_device_not_available.html')
+
+    return render_template('device_details.html', device=device.entity, status=device.status)
+
 
 
 if __name__ == '__main__':

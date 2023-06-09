@@ -10,6 +10,7 @@ CHARACTERISTIC_RUN_UUID = "12345678-1234-5678-1234-56789abcdef3"
 CHARACTERISTIC_IDENTIFY_UUID = "12345678-1234-5678-1234-56789abcdef4"
 CHARACTERISTIC_ON_OFF_UUID = "12345678-1234-5678-1234-56789abcdef5"
 
+
 class BleDevice:
     def __init__(self, client: BleakClient, loop: AbstractEventLoop):
         self.client = client
@@ -35,90 +36,81 @@ class BleDevice:
         asyncio.run_coroutine_threadsafe(self.client.write_gatt_char(char_specifier, data, response), self.loop)
 
     def check_if_ready(self):
-        raise Exception("not implemented")
+        if self.is_connected is False:
+            raise Exception("deivce not conected")
         pass
+
 
 import logging
 
 # Utwórz obiekt loggera
 logger = logging.getLogger(__name__)
 
+
 class WaterDispenser(BleDevice):
-    async def wd_set_impuls(self, impuls: int):
+    def wd_set_impuls(self, impuls: int):
+        logger.info(f"wd_set_impuls - Input: impuls={impuls}")
+
         self.check_if_ready()
 
-        try:
-            if self.client is not None:
-                logger.info(f"wd_set_impuls - Input: impuls={impuls}")
-                if 0 <= impuls <= 0xFFFF:
-                    data_bytes = impuls.to_bytes(2, byteorder='little')
-                    await self.client.write_gatt_char(char_specifier=CHARACTERISTIC_IMPULS_SET_UUID, data=data_bytes, response=True)
-                else:
-                    raise ValueError("Invalid data value. Value must be between 0 and 65535.")
-        except Exception as e:
-            logger.error(f"wd_set_impuls - Error: {e}")
-            raise Exception("BLE write error") from e
+        if 0 <= impuls <= 0xFFFF:
+            data_bytes = impuls.to_bytes(2, byteorder='little')
+            asyncio.run_coroutine_threadsafe(
+                self.client.write_gatt_char(char_specifier=CHARACTERISTIC_IMPULS_SET_UUID, data=data_bytes,
+                                            response=True), self.loop)
+        else:
+            raise ValueError("Invalid data value. Value must be between 0 and 65535.")
 
-    async def wd_run_on(self):
-        self.check_if_ready()
-
+    def wd_run_on(self):
         logger.info("wd_run_on")
-        try:
-            await self.client.write_gatt_char(char_specifier=CHARACTERISTIC_RUN_UUID, data=b'\x01', response=True)
-        except Exception as e:
-            logger.error(f"wd_run_on - Error: {e}")
-            raise Exception("BLE write error") from e
 
-    async def wd_run_off(self):
         self.check_if_ready()
 
-        try:
-            if self.client is not None:
-                logger.info("wd_run_off")
-                await self.client.write_gatt_char(char_specifier=CHARACTERISTIC_RUN_UUID, data=b'\x00', response=True)
-        except Exception as e:
-            logger.error(f"wd_run_off - Error: {e}")
-            raise Exception("BLE write error") from e
+        asyncio.run_coroutine_threadsafe(
+            self.client.write_gatt_char(char_specifier=CHARACTERISTIC_RUN_UUID, data=b'\x01', response=True), self.loop)
 
-    async def wd_identify_on(self):
+    def wd_run_off(self):
+        logger.info("wd_run_off")
+
         self.check_if_ready()
 
-        try:
-            if self.client is not None:
-                logger.info("wd_identify_on")
-                await self.client.write_gatt_char(char_specifier=CHARACTERISTIC_IDENTIFY_UUID, data=b'\x01', response=True)
-        except Exception as e:
-            logger.error(f"wd_identify_on - Error: {e}")
-            raise Exception("BLE write error") from e
+        asyncio.run_coroutine_threadsafe(
+            self.client.write_gatt_char(char_specifier=CHARACTERISTIC_RUN_UUID, data=b'\x00', response=True),
+            self.loop)
 
-    async def wd_identify_off(self):
+    def wd_identify_on(self):
+        logger.info("wd_identify_on")
+
         self.check_if_ready()
 
-        try:
-            if self.client is not None:
-                logger.info("wd_identify_off")
-                await self.client.write_gatt_char(char_specifier=CHARACTERISTIC_IDENTIFY_UUID, data=b'\x00', response=True)
-        except Exception as e:
-            logger.error(f"wd_identify_off - Error: {e}")
-            raise Exception("BLE write error") from e
+        asyncio.run_coroutine_threadsafe(
+            self.client.write_gatt_char(char_specifier=CHARACTERISTIC_IDENTIFY_UUID, data=b'\x01',
+                                        response=True), self.loop)
 
-    async def wd_on(self):
+    def wd_identify_off(self):
+
+        logger.info("wd_identify_off")
+
         self.check_if_ready()
 
-        try:
-            if self.client is not None:
-                logger.info("wd_on")
-                await self.client.write_gatt_char(char_specifier=CHARACTERISTIC_ON_OFF_UUID, data=b'\x01', response=True)
-        except Exception as e:
-            logger.error(f"wd_on - Error: {e}")
-            raise Exception("BLE write error") from e
+        asyncio.run_coroutine_threadsafe(
+            self.client.write_gatt_char(char_specifier=CHARACTERISTIC_IDENTIFY_UUID, data=b'\x00',
+                                        response=True), self.loop)
 
-    async def wd_off(self):
+    def wd_on(self):
+        logger.info("wd_on")
+
         self.check_if_ready()
 
-        try:
-            if self.client is not None:
-                logger.info("wd_off")
-                await self.client.write_gatt_char(char_specifier=CHARACTERISTIC_ON_OFF_UUID, data=b'\x00', response=True)
-        except Exception as e:
-            logger.error(f"wd_off - Error: {e}")
+        asyncio.run_coroutine_threadsafe(
+            self.client.write_gatt_char(char_specifier=CHARACTERISTIC_ON_OFF_UUID, data=b'\x01',
+                                        response=True), self.loop)
+
+    def wd_off(self):
+        logger.info("wd_off")
+
+        self.check_if_ready()
+
+        asyncio.run_coroutine_threadsafe(
+            self.client.write_gatt_char(char_specifier=CHARACTERISTIC_ON_OFF_UUID, data=b'\x00',
+                                        response=True), self.loop)

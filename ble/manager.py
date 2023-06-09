@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Dict
 
 from bleak import BleakClient
@@ -7,9 +8,20 @@ from db.entity import DeviceEntity, DeviceType
 from db.manager import DbManager
 
 
+class Status(str, Enum):
+    CONNECTED = "connected"
+    DIS_CONNECTED = "disconnected"
+
+class DeviceCompose:
+    def __init__(self, entity: DeviceEntity, ble: BleDevice):
+        self.entity: DeviceEntity = entity
+        self.ble: BleDevice = ble
+        self.status: Status = Status.DIS_CONNECTED
+
+
 class DeviceManager:
     def __init__(self, db_manager: DbManager, loop):
-        self.device_map: Dict[DeviceEntity, BleDevice] = {}
+        self.device_list: list[DeviceCompose] = []
         self.ble_loop = loop
         self.db_manager = db_manager
         self.db_manager.load_devices()
@@ -18,38 +30,43 @@ class DeviceManager:
         for device in devices:
             self._create_device(device)
 
+    def get_by_id(self, id: int) -> DeviceCompose:
+        for device in self.device_list:
+            if device.entity.id == id:
+                return device
+        return None
+
+    def get_by_client(self, client: BleakClient) -> DeviceCompose:
+        for device in self.device_list:
+            if device.ble.client == client:
+                return device
+        return None
+
+    def get_by_entity(self, entity: DeviceEntity) -> DeviceCompose:
+        for device in self.device_list:
+            if device.entity == entity:
+                return device
+        return None
 
 
-    def add_device(self, device: DeviceEntity) -> BleDevice:
+
+    def add_device(self, device: DeviceEntity) -> DeviceCompose:
         added_device = self.db_manager.add_device(device)
         if added_device is not None:
             self._create_device(added_device)
-        return self.device_map[added_device]
+        return self.get_by_entity(added_device)
 
     def remove_device(self, device):
         self.db_manager.remove_device(device)
         self.remove_device(device)
 
-    def get_devices(self) -> [DeviceEntity]:
-        return list(self.device_map.keys())
+    def get_devices(self) -> [DeviceCompose]:
+        return self.device_list
 
-    def get_device_by_id(self, id) -> BleDevice:
-        return self.device_map[self.db_manager.get_devices_by_id(id)]
-
-    def get_connected_device_by_id(self, id) -> BleDevice:
-        entity = self.db_manager.get_devices_by_id(id)
-        device = self.device_map[entity]
-
-        self.connect_device(entity, device)
-
-        return device
-
-    def get_entity_by_id(self, id) -> DeviceEntity:
-        return self.db_manager.get_devices_by_id(id)
 
 
     def _create_device(self, device_entity: DeviceEntity):
-        if device_entity in self.device_map:
+        if self.get_by_entity(device_entity) is not None:
             return
 
         ble_device: BleDevice = None
@@ -61,42 +78,44 @@ class DeviceManager:
         else:
             return
 
-        self.device_map[device_entity] = ble_device
+        compose = DeviceCompose(device_entity, ble_device)
 
-    def connect_device(self, entity: DeviceEntity, ble_device: BleDevice):
-        entity.status = 'disconnected'
+        self.device_list.append(compose)
 
-        if entity.type == DeviceType.TEST:
+    def connect(self, compose: DeviceCompose):
+        compose.status = 'disconnected'
+
+        if compose.entity.type == DeviceType.TEST:
             return
 
-        if not ble_device.is_connected:
+        if not compose.ble.is_connected:
             try:
-                ble_device.connect()
-                entity.status = 'connected'
+                compose.ble.connect()
+                compose.status = 'connected'
             except Exception as e:
-                entity.status = 'disconnected'
+                compose.status = 'disconnected'
                 return
 
-        entity.status = 'connected'
+        compose.status = 'connected'
 
     def connect_all(self):
-        for entity, ble_device in self.device_map.items():
-            self.connect_device(entity, ble_device)
+        for compose in self.device_list:
+            self.connect(compose)
 
     def check_if_contain(self, address: str) -> bool:
         is_contain = False
-        for entity, ble_device in self.device_map.items():
-            if ble_device.client.address == address:
+        for compose in self.device_list:
+            if compose.ble.client.address == address:
                 is_contain = True
                 return is_contain
         return is_contain
 
     def disconnect(self, client: BleakClient):
-        device_entity = None
-        for entity, ble in self.device_map.items():
-            if ble.client == client:
-                device_entity = entity
+        compose_founded = None
+        for compose in self.device_list:
+            if compose.ble.client == client:
+                compose_founded = compose
 
-        device_entity.status = 'disconnected'
+        compose_founded.status = 'disconnected'
 
 

@@ -4,7 +4,7 @@ from ble.water_dispenser import SERWICE_WATER_DISPENSER_UUID
 
 
 async def search_and_return_device():
-    scanner = BleakScanner(service_uuids=[SERWICE_WATER_DISPENSER_UUID])
+    scanner = BleakScanner()
     devices_local = await scanner.discover()
 
     found_devices = []
