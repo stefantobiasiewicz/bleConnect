@@ -1,9 +1,12 @@
+import asyncio
 import logging
 from enum import Enum
 from typing import Dict
 
 from bleak import BleakClient
+from bleak.exc import BleakDeviceNotFoundError
 
+from ble.scanner import search_and_return_device
 from ble.water_dispenser import BleDevice, WaterDispenser
 from db.entity import DeviceEntity, DeviceType
 from db.manager import DbManager
@@ -95,6 +98,12 @@ class DeviceManager:
         if not compose.ble.is_connected:
             try:
                 logger.info(f'trying to connect by ble stack.')
+                compose.ble.connect()
+                compose.status = 'connected'
+            except BleakDeviceNotFoundError as e:
+                logger.info(f'error BleakDeviceNotFoundError trying to connect one more time.')
+                asyncio.run_coroutine_threadsafe(search_and_return_device(), self.ble_loop).result()
+
                 compose.ble.connect()
                 compose.status = 'connected'
             except Exception as e:
