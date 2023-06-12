@@ -11,14 +11,22 @@ from ble.water_dispenser import WaterDispenser
 from db.entity import DeviceEntity, DeviceType
 from db.manager import DbManager
 
+from mqtt.manager import MQTTConfigManager
+from mqtt.model import MQTTConnectionDTO
+
 logger = logging.getLogger(__name__)
 
 DB_PATH = os.environ.get("DB_PATH")
 #DB_PATH = '/Users/stefantobiasiewicz/Documents/Programing/Python/bleConnection/test'
+# DB_PATH = os.environ.get("DB_PATH")
+
+
+DB_PATH = '/Users/stefantobiasiewicz/Documents/Programing/Python/bleConnection/test'
 
 ble_loop = asyncio.new_event_loop()
 
 device_manager = DeviceManager(DbManager(DB_PATH), ble_loop)
+mqtt_manager = MQTTConfigManager(DB_PATH)
 
 app = Flask(__name__)
 
@@ -172,7 +180,30 @@ def device_details(device_id):
 
     return render_template('device_details.html', device=device.entity, status=device.status)
 
+# @@@@@@@@@@@@@@@@@ MQTT @@@@@@@@@@@@@@@@@
 
+
+@app.route('/mqtt/config', methods=['GET'])
+def get_mqtt_config():
+    config = mqtt_manager.get_config()
+    return render_template('mqtt_config.html', config=config)
+
+
+@app.route('/mqtt/config', methods=['POST'])
+def save_mqtt_config():
+    data = request.form.to_dict()
+    new_config = MQTTConnectionDTO(**data)
+    mqtt_manager.update_config(new_config)
+    return redirect(location='/mqtt/config')
+
+
+@app.route('/mqtt/config/edit', methods=['GET'])
+def edit_mqtt_config():
+    config = mqtt_manager.get_config()
+    return render_template('edit_mqtt_config.html', config=config)
+
+
+# @@@@@@@@@@@@@@@@@ MQTT @@@@@@@@@@@@@@@@@
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
