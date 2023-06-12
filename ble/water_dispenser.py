@@ -30,7 +30,9 @@ class BleDevice:
             future = asyncio.run_coroutine_threadsafe(self.client.connect(), self.loop)
 
     def disconnect(self):
-        asyncio.run_coroutine_threadsafe(self.client.disconnect(), self.loop)
+        future = asyncio.run_coroutine_threadsafe(self.client.disconnect(), self.loop)
+        future.result()
+
 
     def write_gatt_char(self, char_specifier, data, response=False):
         asyncio.run_coroutine_threadsafe(self.client.write_gatt_char(char_specifier, data, response), self.loop)

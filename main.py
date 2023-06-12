@@ -11,8 +11,10 @@ from ble.water_dispenser import WaterDispenser
 from db.entity import DeviceEntity, DeviceType
 from db.manager import DbManager
 
-# DB_PATH = os.environ.get("DB_PATH")
-DB_PATH = '/Users/stefantobiasiewicz/Documents/Programing/Python/bleConnection/test'
+logger = logging.getLogger(__name__)
+
+DB_PATH = os.environ.get("DB_PATH")
+#DB_PATH = '/Users/stefantobiasiewicz/Documents/Programing/Python/bleConnection/test'
 
 ble_loop = asyncio.new_event_loop()
 
@@ -185,10 +187,24 @@ if __name__ == '__main__':
     t = Thread(target=bleak_thread, args=(ble_loop,))
     t.start()
 
+    # scanning by backend
+    future = asyncio.run_coroutine_threadsafe(search_and_return_device(), ble_loop)
+    devices = future.result()
+
     # before app start
-    device_manager.connect_all()
+    try:
+        logger.info('connecting to all devices')
+        device_manager.connect_all()
+    except Exception as e:
+        logger.error(e)
 
     app.run(port=8000, debug=False)
+
+    try:
+        logger.info('disconnection from all devices')
+        device_manager.disconnect_all()
+    except Exception as e:
+        logger.error(e)
 
     # stopping ble thread
     ble_loop.stop()

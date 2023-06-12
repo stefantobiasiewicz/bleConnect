@@ -4,7 +4,7 @@ import time
 
 from bleak import BleakScanner, BleakClient
 
-from devices import SERWICE_WATER_DISPENSER_UUID, CHARACTERISTIC_ON_OFF_UUID
+from ble.water_dispenser import CHARACTERISTIC_ON_OFF_UUID, SERWICE_WATER_DISPENSER_UUID
 
 
 async def search_and_return_device():
@@ -44,9 +44,9 @@ async def main():
     for device in devices:
         client = await connect(device)
 
-        await write_data(client, b'\x01')
-        time.sleep(5)
-        await write_data(client, b'\x00')
+        # await write_data(client, b'\x01')
+        # time.sleep(5)
+        # await write_data(client, b'\x00')
         await disconnect(client)
 
 

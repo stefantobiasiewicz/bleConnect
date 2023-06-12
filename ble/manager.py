@@ -1,3 +1,4 @@
+import logging
 from enum import Enum
 from typing import Dict
 
@@ -7,6 +8,7 @@ from ble.water_dispenser import BleDevice, WaterDispenser
 from db.entity import DeviceEntity, DeviceType
 from db.manager import DbManager
 
+logger = logging.getLogger(__name__)
 
 class Status(str, Enum):
     CONNECTED = "connected"
@@ -73,7 +75,7 @@ class DeviceManager:
 
         if device_entity.type == DeviceType.WD:
             client = BleakClient(address_or_ble_device=device_entity.address,
-                                 disconnected_callback=self.disconnect)
+                                 disconnected_callback=self.disconnect_callback)
             ble_device = WaterDispenser(client=client, loop=self.ble_loop)
         else:
             return
@@ -85,22 +87,40 @@ class DeviceManager:
     def connect(self, compose: DeviceCompose):
         compose.status = 'disconnected'
 
+        logger.info(f'connecting to {compose} with status: {compose.ble.is_connected}.')
+
         if compose.entity.type == DeviceType.TEST:
             return
 
         if not compose.ble.is_connected:
             try:
+                logger.info(f'trying to connect by ble stack.')
                 compose.ble.connect()
                 compose.status = 'connected'
             except Exception as e:
+
                 compose.status = 'disconnected'
-                return
+                raise Exception(e)
 
         compose.status = 'connected'
+
+    def disconnect(self, compose: DeviceCompose):
+        compose.status = 'disconnected'
+
+        if compose.entity.type == DeviceType.TEST:
+            return
+
+        if compose.ble.is_connected:
+            compose.ble.disconnect()
+
 
     def connect_all(self):
         for compose in self.device_list:
             self.connect(compose)
+
+    def disconnect_all(self):
+        for compose in self.device_list:
+            self.disconnect(compose)
 
     def check_if_contain(self, address: str) -> bool:
         is_contain = False
@@ -110,7 +130,7 @@ class DeviceManager:
                 return is_contain
         return is_contain
 
-    def disconnect(self, client: BleakClient):
+    def disconnect_callback(self, client: BleakClient):
         compose_founded = None
         for compose in self.device_list:
             if compose.ble.client == client:
