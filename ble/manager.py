@@ -80,6 +80,8 @@ class DeviceManager:
             client = BleakClient(address_or_ble_device=device_entity.address,
                                  disconnected_callback=self.disconnect_callback)
             ble_device = WaterDispenser(client=client, loop=self.ble_loop)
+        elif device_entity.type == DeviceType.TEST:
+            ble_device = None
         else:
             return
 
@@ -90,10 +92,10 @@ class DeviceManager:
     def connect(self, compose: DeviceCompose):
         compose.status = 'disconnected'
 
-        logger.info(f'connecting to {compose} with status: {compose.ble.is_connected}.')
-
         if compose.entity.type == DeviceType.TEST:
             return
+
+        logger.info(f'connecting to {compose} with status: {compose.ble.is_connected}.')
 
         if not compose.ble.is_connected:
             try:
@@ -134,6 +136,8 @@ class DeviceManager:
     def check_if_contain(self, address: str) -> bool:
         is_contain = False
         for compose in self.device_list:
+            if compose.entity.type == DeviceType.TEST:
+                return False
             if compose.ble.client.address == address:
                 is_contain = True
                 return is_contain
@@ -142,6 +146,8 @@ class DeviceManager:
     def disconnect_callback(self, client: BleakClient):
         compose_founded = None
         for compose in self.device_list:
+            if compose.entity.type is DeviceType.TEST:
+                continue
             if compose.ble.client == client:
                 compose_founded = compose
 

@@ -2,20 +2,7 @@
 <html>
 <head>
     <title>Moja aplikacja Flask</title>
-    <style>
-        /* Dodaj odpowiednie style dla tabelki */
-        table {
-            border-collapse: collapse;
-            width: 100%;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
@@ -110,36 +97,56 @@
 </head>
 <body>
     <div class="main-content">
-        <h1>Ble deivceis</h1>
+        <h2>Ble Connect!</h2>
 
-        <h2>Lista posiadanych urządzeń:</h2>
-        <table id="deviceTable">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Friendly Name</th>
-                    <th>Address</th>
-                    <th>connected</th>
-                    <th>type</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for device in devices %}
-                <tr>
-                    <td>{{ device.id }}</td>
-                    <td>{{ device.name }}</td>
-                    <td>{{ device.address }}</td>
-                    <td>{{ device.status }}</td>
-                    <td>{{ device.type }}</td>
-                    <td><a class="details btn btn-primary" href="/device/{{ device.id }}?mac={{ device.mac }}">Szczegóły</a></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div style="display: flex; width: 90%;">
+            <div class="frame">
+                <h3>Mqtt adapter</h3>
+                <label>host: </label>
+                <span class="label label-default">RUN</span>
+                <a class="details btn btn-primary" href="/mqtt/config">MQTT adapters</a>
+                tutaj bedzie lista adapterów mqtt pozwalającyh na wysyłanie informacji do wielu klientów mqtt/serwerów
+            </div>
+            <div class="frame">
+                <h3>Ble control</h3>
+                <button id="scanButton" class="btn btn-primary">Scan</button>
+                <button id="connectAllButton" class="btn btn-primary">Connect ALl</button>
+                <button id="disonnectAllButton" class="btn btn-primary">Disconnect All</button>
+            </div>
+        </div>
 
-        <button id="addDeviceButton" class="btn btn-primary">Dodaj urządzenie</button>
-        <a class="details btn btn-primary" href="/mqtt/config">MQTT</a>
+        <div class="frame">
+            <div style="display: flex; justify-content: space-between; padding-right: 20px;">
+                <div class="btn">
+                    <h3 >Lista posiadanych urządzeń:</h3>
+                </div>
+                <button id="addDeviceButton" class="btn btn-primary">Dodaj urządzenie</button>
+            </div>
+            <table id="deviceTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Friendly Name</th>
+                        <th>Address</th>
+                        <th>connected</th>
+                        <th>type</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for device in devices %}
+                    <tr>
+                        <td>{{ device.id }}</td>
+                        <td>{{ device.name }}</td>
+                        <td>{{ device.address }}</td>
+                        <td>{{ device.status }}</td>
+                        <td>{{ device.type }}</td>
+                        <td><a class="details btn btn-primary" href="/device/{{ device.id }}?mac={{ device.mac }}">Szczegóły</a></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="modal fade" id="addDeviceModal" tabindex="-1" role="dialog" aria-labelledby="addDeviceModalLabel" aria-hidden="true">

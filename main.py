@@ -3,7 +3,7 @@ import logging
 import os
 from threading import Thread
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect
 
 from ble.manager import DeviceManager, Status
 from ble.scanner import search_and_return_device
@@ -180,9 +180,8 @@ def device_details(device_id):
 
     return render_template('device_details.html', device=device.entity, status=device.status)
 
+
 # @@@@@@@@@@@@@@@@@ MQTT @@@@@@@@@@@@@@@@@
-
-
 @app.route('/mqtt/config', methods=['GET'])
 def get_mqtt_config():
     config = mqtt_manager.get_config()
@@ -200,7 +199,7 @@ def save_mqtt_config():
 @app.route('/mqtt/config/edit', methods=['GET'])
 def edit_mqtt_config():
     config = mqtt_manager.get_config()
-    return render_template('edit_mqtt_config.html', config=config)
+    return render_template('mqtt_edit_config.html', config=config)
 
 
 # @@@@@@@@@@@@@@@@@ MQTT @@@@@@@@@@@@@@@@@
@@ -240,6 +239,7 @@ if __name__ == '__main__':
     # stopping ble thread
     ble_loop.stop()
     t.join()
+
 
     a = 2
     print(a)
