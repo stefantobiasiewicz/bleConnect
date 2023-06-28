@@ -211,11 +211,10 @@ if __name__ == '__main__':
     def bleak_thread(loop):
         asyncio.set_event_loop(loop)
         loop.run_forever()
-        a = 2
-        print(a)
 
-    t = Thread(target=bleak_thread, args=(ble_loop,))
-    t.start()
+    tread = Thread(target=bleak_thread, args=(ble_loop,))
+    tread.daemon = True
+    tread.start()
 
     # scanning by backend
     future = asyncio.run_coroutine_threadsafe(search_and_return_device(), ble_loop)
@@ -236,10 +235,4 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error(e)
 
-    # stopping ble thread
-    ble_loop.stop()
-    t.join()
-
-
-    a = 2
-    print(a)
+    logger.info('App exited')

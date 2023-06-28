@@ -5,6 +5,7 @@ from typing import Dict
 
 from bleak import BleakClient
 from bleak.exc import BleakDeviceNotFoundError
+from retry import retry
 
 from ble.scanner import search_and_return_device
 from ble.water_dispenser import BleDevice, WaterDispenser
@@ -89,6 +90,7 @@ class DeviceManager:
 
         self.device_list.append(compose)
 
+    @retry(exceptions=Exception, tries=3)
     def connect(self, compose: DeviceCompose):
         compose.status = 'disconnected'
 
